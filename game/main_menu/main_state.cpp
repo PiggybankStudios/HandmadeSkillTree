@@ -204,6 +204,16 @@ void CaptureMouseMainAppState()
 	VarArrayLoop(&main->nodes, nIndex)
 	{
 		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		if (node->nodeIsBeingDragged)
+		{
+			MouseHitPrint("SkillNode%llu", node->id);
+			main->isNodeHovered = true;
+			main->hoveredNodeId = node->id;
+		}
+	}
+	VarArrayLoop(&main->nodes, nIndex)
+	{
+		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
 		rec mainRec = node->mainRec + nodesOffset;
 		if (MouseHitRecPrint(mainRec, "SkillNode%llu", node->id))
 		{
@@ -315,12 +325,48 @@ void UpdateMainAppState()
 	// +==============================+
 	// |      Update Skill Nodes      |
 	// +==============================+
+	v2 nodesOffset = ScreenSize/2 - main->cameraPos;
+	v2 mouseWorldPos = MousePos - ScreenSize/2 + main->cameraPos;
 	VarArrayLoop(&main->nodes, nIndex)
 	{
 		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		bool isHovered = IsMouseOverPrint("SkillNode%llu", node->id);
+		
 		v2 offset = node->targetPos - node->currentPos;
-		if (Vec2LengthSquared(offset) > 1) { node->currentPos += offset / 10; }
+		if (Vec2LengthSquared(offset) > 1) { node->currentPos += offset / NODE_MOVE_LAG; }
 		else { node->currentPos = node->targetPos; }
+		
+		if (MousePressedRaw(MouseBtn_Left)) { node->leftClickStartedInside = false; }
+		
+		if (isHovered)
+		{
+			if (MousePressed(MouseBtn_Left))
+			{
+				HandleMouse(MouseBtn_Left);
+				node->leftClickStartedInside = true;
+				node->leftClickOffset = mouseWorldPos - node->mainRec.topLeft;
+			}
+			if (MouseReleased(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
+			{
+				HandleMouse(MouseBtn_Left);
+				main->isNodeSelected = true;
+				main->selectedNodeId = node->id;
+			}
+		}
+		if (MouseDownRaw(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
+		{
+			v2 moveOffset = mouseWorldPos - (node->mainRec.topLeft + node->leftClickOffset);
+			if (Vec2LengthSquared(moveOffset) >= Square(NODE_MOVE_START_DIST))
+			{
+				node->nodeIsBeingDragged = true;
+			}
+		}
+		if (node->nodeIsBeingDragged)
+		{
+			HandleMouse(MouseBtn_Left);
+			node->targetPos = mouseWorldPos - node->leftClickOffset + node->mainRec.size/2;
+			if (MouseReleasedRaw(MouseBtn_Left)) { node->nodeIsBeingDragged = false; }
+		}
 	}
 	
 	FreeScratchArena(scratch);
@@ -343,7 +389,7 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 	// |      Render Skill Nodes      |
 	// +==============================+
 	v2 nodesOffset = ScreenSize/2 - main->cameraPos;
-	//connections
+	//non-highlighted connections
 	VarArrayLoop(&main->nodes, nIndex)
 	{
 		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
@@ -351,11 +397,30 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		VarArrayLoop(&node->connections, cIndex)
 		{
 			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
-			SkillNode_t* upNode = FindSkillNodeById(connection->upId);
-			v2 upNodePos = upNode->currentPos + nodesOffset;
-			bool eitherNodeHovered = IsConnectionHoverConnected(connection);
-			Color_t connectionColor = eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR;
-			RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, connectionColor);
+			if (!IsConnectionHoverConnected(connection))
+			{
+				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
+				v2 upNodePos = upNode->currentPos + nodesOffset;
+				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, CONNECTION_COLOR);
+			}
+		}
+	}
+	//highlighted connections
+	VarArrayLoop(&main->nodes, nIndex)
+	{
+		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		v2 nodePos = node->currentPos + nodesOffset;
+		VarArrayLoop(&node->connections, cIndex)
+		{
+			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
+			if (IsConnectionHoverConnected(connection))
+			{
+				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
+				v2 upNodePos = upNode->currentPos + nodesOffset;
+				bool eitherNodeHovered = IsConnectionHoverConnected(connection);
+				Color_t connectionColor = eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR;
+				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, CONNECTION_HIGHLIGHT_COLOR);
+			}
 		}
 	}
 	//shadows
@@ -492,6 +557,13 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 			RcDrawTextPrint(textPos, MonokaiWhite, "Game     v%llu.%02llu(%03llu)", (u64)GAME_VERSION_MAJOR, (u64)GAME_VERSION_MINOR, (u64)GAME_VERSION_BUILD);
 			textPos.y -= RcGetLineHeight();
 		}
+		
+		RcDrawTextPrint(textPos, MonokaiWhite, "Camera (%g, %g)", main->cameraPos.x, main->cameraPos.y);
+		textPos.y -= RcGetLineHeight();
+		RcDrawTextPrint(textPos, MonokaiWhite, "Selected: %s %llu", main->isNodeSelected ? "Yes" : "No", main->selectedNodeId);
+		textPos.y -= RcGetLineHeight();
+		RcDrawTextPrint(textPos, MonokaiWhite, "Hovered: %s %llu", main->isNodeHovered ? "Yes" : "No", main->hoveredNodeId);
+		textPos.y -= RcGetLineHeight();
 	}
 	
 	FreeScratchArena(scratch);

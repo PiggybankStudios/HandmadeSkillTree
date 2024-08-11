@@ -28,6 +28,8 @@ Date:   07\02\2024
 #define CAMERA_MOVE_SPEED_SLOW        10 //px/frame
 #define CAMERA_LAG                    4 //divisor
 #define CAMERA_LIMIT_BORDER_THICKNESS 64 //px
+#define NODE_MOVE_START_DIST          16 //px
+#define NODE_MOVE_LAG                 6 //divisor
 
 enum NodePlacementAlg_t
 {
@@ -83,6 +85,10 @@ struct SkillNode_t
 	
 	v2 currentPos;
 	v2 targetPos;
+	
+	bool leftClickStartedInside;
+	bool nodeIsBeingDragged;
+	v2 leftClickOffset;
 	
 	rec mainRec;
 	//These are all relative to mainRec
