@@ -2,4 +2,4 @@
 A skill tree visual to help guide interacting with and learning from Handmade Projects
 
 # Screenshot
-![Screenshot](/screeshots/screenshot1.png)
+![Screenshot](/screenshots/screenshot1.png)
