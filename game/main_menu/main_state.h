@@ -13,6 +13,6 @@ Date:   07\02\2024
 struct MainAppState_t
 {
 	bool initialized;
-}
+};
 
 #endif //  _MAIN_STATE_H
