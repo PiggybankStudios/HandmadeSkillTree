@@ -10,115 +10,7 @@ Description:
 #include "ui/ui_divider.cpp"
 
 #include "main_menu/main_helpers.cpp"
-
-void MainCreateNodes()
-{
-	if (main->nodes.allocArena == nullptr)
-	{
-		CreateVarArray(&main->nodes, mainHeap, sizeof(SkillNode_t));
-	}
-	else	
-	{
-		VarArrayLoop(&main->nodes, nIndex)
-		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-			FreeSkillNode(node);
-		}
-	}
-	VarArrayClear(&main->nodes);
-	main->nextNodeId = 1;
-	
-	#define AddNode(name, displayName) u64 name; do                  \
-	{                                                                \
-		SkillNode_t* name##Pntr = AddSkillNode(NewStr(displayName)); \
-		name = name##Pntr->id;                                       \
-	} while(0)
-	#define AddNodeEx(name, displayName, ...) u64 name; do                                               \
-	{                                                                                                    \
-		u64 name##Deps[] = { __VA_ARGS__ };                                                              \
-		SkillNode_t* name##Pntr = AddSkillNode(NewStr(displayName), ArrayCount(name##Deps), name##Deps); \
-		name = name##Pntr->id;                                                                           \
-	} while(0)
-	
-	AddNode(nodeLlvm, "LLVM");
-	AddNode(nodeCpp, "C/C++");
-	AddNode(nodeGo, "Go");
-	AddNode(nodeLua, "Lua");
-	AddNode(nodeMp3, "mp3");
-	AddNode(nodePython, "Python");
-	AddNodeEx(nodeRust, "Rust", nodeLlvm);
-	AddNodeEx(nodeOdin, "Odin", nodeLlvm);
-	AddNodeEx(nodeZig, "Zig", nodeLlvm);
-	AddNodeEx(nodeJai, "Jai", nodeLlvm);
-	AddNodeEx(nodeCakeLisp, "CakeLisp", nodeLlvm);
-	AddNodeEx(nodeC3, "C3", nodeLlvm);
-	AddNode(nodeWin32, "Win32");
-	AddNode(nodeWinAudio, "WinAudio");
-	AddNode(nodeGlfw, "GLFW");
-	AddNode(nodeWasm, "Web Assembly (WASM)");
-	AddNodeEx(nodeImgui, "Dear ImGui", nodeCpp);
-	AddNodeEx(nodeSdl, "SDL", nodeCpp);
-	AddNodeEx(nodeUnityBuilds, "Unity/Batch Building", nodeCpp);
-	AddNode(nodeOpenGL, "OpenGL");
-	AddNode(nodeVulkan, "Vulkan");
-	AddNode(nodeDirectX, "DirectX");
-	AddNode(nodeMetal, "Metal");
-	AddNode(nodeWebGL, "WebGL/WebGPU");
-	AddNodeEx(nodeZigBuild, "Zig Build", nodeZig);
-	AddNode(nodeSoftwareRasterizing, "Software Rasterizing");
-	AddNodeEx(nodeStbRectPack, "Stb RectPack", nodeCpp);
-	AddNodeEx(nodeStbTrueType, "Stb TrueType", nodeStbRectPack, nodeCpp);
-	AddNodeEx(nodeStbImage, "Stb Image", nodeCpp);
-	AddNodeEx(nodeHandmadeHero, "Handmade Hero", nodeCpp, nodeWin32, nodeStbTrueType, nodeStbImage, nodeSoftwareRasterizing, nodeWinAudio);
-	AddNodeEx(nodePigEngine, "Pig Engine", nodeCpp, nodeWin32, nodeGlfw, nodeOpenGL, nodeStbTrueType, nodeStbImage);
-	AddNodeEx(nodeMsfGif, "msf_gif.h", nodeCpp);
-	AddNodeEx(node4Coder, "4Coder", nodeCpp);
-	AddNodeEx(nodeSpall, "Spall", nodeWasm);
-	AddNodeEx(nodeRemedyBG, "RemedyBG", nodeCpp, nodeImgui);
-	AddNodeEx(nodeDiskVoyager, "Disk Voyager", nodeCpp);
-	AddNodeEx(nodeWhiteBox, "WhiteBox", nodeCpp, nodeImgui);
-	AddNode(nodeBEdit, "BEdit");
-	AddNode(nodeCactusImageViewer, "Cactus Image Viewer");
-	AddNodeEx(nodeOrca, "Orca", nodeCpp, nodeWasm);
-	AddNodeEx(nodeRaylib, "raylib", nodeCpp);
-	AddNode(nodeDarke, "Darke");
-	AddNode(nodeCuik, "CiukC");
-	AddNode(nodeEssence, "Essence");
-	AddNode(nodeWcap, "wcap");
-	AddNode(nodeAvRacer, "AV-Racer");
-	AddNode(nodeHappenlance, "Happenlance");
-	AddNode(nodeSilverNode, "SilverNode");
-	AddNodeEx(nodeHandmadeHeroNotes, "Handmade Hero Notes", nodeHandmadeHero);
-	AddNodeEx(nodeNCine, "nCine", nodeCpp, nodeLua);
-	AddNodeEx(nodeInsobot, "insobot", nodeCpp);
-	AddNode(nodeRiscyBusiness, "Riscy Business");
-	AddNode(nodeMotionBox, "Motion Box");
-	AddNode(nodeTodool, "Todool");
-	AddNode(nodeBitwise, "Bitwise");
-	AddNode(nodeMilton, "Milton");
-	AddNode(nodeCuteExplorer, "Cute Explorer");
-	AddNode(nodeMetadesk, "Metadesk");
-	AddNodeEx(nodeMPlay3, "MPlay3", nodeMp3);
-	AddNode(nodeMetaAssemblyLanguage, "Meta Assembly Language");
-	AddNode(nodePepperEditor, "Pepper Editor");
-	AddNode(nodeSyzygy, "Syzygy");
-	AddNode(nodeFeohTheFitter, "Feoh the Fitter");
-	AddNode(nodeCyborgEarthworm, "Cyborg Earthworm");
-	AddNode(nodeEscher, "Escher");
-	AddNode(nodeMiniGlut, "miniglut");
-	AddNode(nodeLightTracerRender, "Light Tracer Render");
-	AddNode(nodeMiniAudio, "miniaudio");
-	AddNode(nodeBreakArcadeGamesOut, "Break Arcade Games Out");
-	AddNode(nodeTilengine, "Tilengine");
-	AddNode(nodeIndigrid, "Indigrid");
-	AddNode(nodeLibrg, "librg");
-	AddNode(nodeHandmadeMath, "Handmade Math");
-	AddNode(nodeGoxel, "Goxel");
-	AddNodeEx(nodeGbLibraries, "GB Libraries", nodeCpp);
-	AddNode(nodeSoLoud, "SoLoud Audio Engine");
-	
-	CalculateAllDependents();
-}
+#include "main_menu/main_tree.cpp"
 
 // +--------------------------------------------------------------+
 // |                       Access Resources                       |
@@ -146,6 +38,9 @@ void StartMainAppState(AppState_t oldAppState, bool initialize)
 		main->cameraPos = Vec2_Zero;
 		main->cameraGoto = main->cameraPos;
 		main->moveCameraToCenter = true;
+		
+		InitUiDivider(&main->rightDivider, true, true, 0.75f);
+		InitUiDivider(&main->leftDivider, true, true, 0.25f);
 		
 		main->initialized = true;
 	}
@@ -181,6 +76,31 @@ void StopMainAppState(AppState_t newAppState, bool deinitialize, bool shuttingDo
 void LayoutMainAppState()
 {
 	RcBindFont(&pig->resources.fonts->debug, SelectDefaultFontFace());
+	
+	main->rightDivider.mainRec = ScreenRec;
+	LayoutUiDivider(&main->rightDivider);
+	main->leftDivider.mainRec = ScreenRec;
+	LayoutUiDivider(&main->leftDivider);
+	
+	if (main->sidebarAnim < 1.0f)
+	{
+		main->viewportRec = RecLerp(ScreenRec, main->rightDivider.leftRec, main->sidebarAnim);
+		RecAlign(&main->viewportRec);
+		main->sidebarRec = RecLerp(NewRec(ScreenSize.width, 0, 0, ScreenSize.height), main->rightDivider.rightRec, main->sidebarAnim);
+		RecAlign(&main->sidebarRec);
+		main->infoRec = NewRec(ScreenSize.width, 0, 0, ScreenSize.height);
+		RecAlign(&main->infoRec);
+	}
+	else 
+	{
+		main->viewportRec = RecLerp(main->rightDivider.leftRec, NewRec(0, 0, 0, ScreenSize.height), main->transitionAnim);
+		RecAlign(&main->viewportRec);
+		main->sidebarRec = RecLerp(main->rightDivider.rightRec, main->leftDivider.leftRec, main->transitionAnim);
+		RecAlign(&main->sidebarRec);
+		main->infoRec = RecLerp(NewRec(ScreenSize.width, 0, 0, ScreenSize.height), main->leftDivider.rightRec, main->transitionAnim);
+		RecAlign(&main->infoRec);
+	}
+	
 	main->nodeBounds = Rec_Zero;
 	VarArrayLoop(&main->nodes, nIndex)
 	{
@@ -200,27 +120,33 @@ void LayoutMainAppState()
 void CaptureMouseMainAppState()
 {
 	main->isNodeHovered = false;
-	v2 nodesOffset = ScreenSize/2 - main->cameraPos;
-	VarArrayLoop(&main->nodes, nIndex)
+	if (IsMouseInsideRec(main->viewportRec))
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-		if (node->nodeIsBeingDragged)
+		v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
+		VarArrayLoop(&main->nodes, nIndex)
 		{
-			MouseHitPrint("SkillNode%llu", node->id);
-			main->isNodeHovered = true;
-			main->hoveredNodeId = node->id;
+			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+			if (node->nodeIsBeingDragged)
+			{
+				MouseHitPrint("ViewportSkillNode%llu", node->id);
+				main->isNodeHovered = true;
+				main->hoveredNodeId = node->id;
+			}
 		}
-	}
-	VarArrayLoop(&main->nodes, nIndex)
-	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-		rec mainRec = node->mainRec + nodesOffset;
-		if (MouseHitRecPrint(mainRec, "SkillNode%llu", node->id))
+		for (u64 nIndex = main->nodes.length; nIndex > 0; nIndex--)
 		{
-			main->isNodeHovered = true;
-			main->hoveredNodeId = node->id;
+			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex-1);
+			rec mainRec = node->mainRec + nodesOffset;
+			if (MouseHitRecPrint(mainRec, "ViewportSkillNode%llu", node->id))
+			{
+				main->isNodeHovered = true;
+				main->hoveredNodeId = node->id;
+			}
 		}
+		MouseHitNamed("Viewport");
 	}
+	MouseHitRecNamed(main->sidebarRec, "Sidebar");
+	MouseHitRecNamed(main->infoRec, "Info");
 }
 
 // +--------------------------------------------------------------+
@@ -240,13 +166,45 @@ void UpdateMainAppState()
 	}
 	
 	// +==============================+
+	// |     I Toggles Info Panel     |
+	// +==============================+
+	if (KeyPressed(Key_I))
+	{
+		HandleKeyExtended(Key_I);
+		main->isInfoOpened = !main->isInfoOpened;
+	}
+	
+	// +==============================+
+	// |  Update Divider Animations   |
+	// +==============================+
+	if (main->isInfoOpened)
+	{
+		UpdateAnimationUp(&main->transitionAnim, TRANSITION_ANIM_TIME);
+	}
+	else
+	{
+		UpdateAnimationDown(&main->transitionAnim, TRANSITION_ANIM_TIME);
+	}
+	if (main->isNodeSelected)
+	{
+		UpdateAnimationUp(&main->sidebarAnim, SIDEBAR_ANIM_TIME);
+	}
+	else
+	{
+		UpdateAnimationDown(&main->sidebarAnim, SIDEBAR_ANIM_TIME);
+	}
+	
+	// +==============================+
 	// |      WASD Moves Camera       |
 	// +==============================+
-	r32 cameraSpeed = (r32)(KeyDownRaw(Key_Shift) ? CAMERA_MOVE_SPEED_FAST : CAMERA_MOVE_SPEED_SLOW);
-	if (KeyDown(Key_W)) { HandleKey(Key_W); main->cameraGoto.y -= cameraSpeed * (r32)TimeScale; }
-	if (KeyDown(Key_A)) { HandleKey(Key_A); main->cameraGoto.x -= cameraSpeed * (r32)TimeScale; }
-	if (KeyDown(Key_S)) { HandleKey(Key_S); main->cameraGoto.y += cameraSpeed * (r32)TimeScale; }
-	if (KeyDown(Key_D)) { HandleKey(Key_D); main->cameraGoto.x += cameraSpeed * (r32)TimeScale; }
+	if (!main->isNodeSelected || !main->isInfoOpened)
+	{
+		r32 cameraSpeed = (r32)(KeyDownRaw(Key_Shift) ? CAMERA_MOVE_SPEED_FAST : CAMERA_MOVE_SPEED_SLOW);
+		if (KeyDown(Key_W)) { HandleKey(Key_W); main->cameraGoto.y -= cameraSpeed * (r32)TimeScale; }
+		if (KeyDown(Key_A)) { HandleKey(Key_A); main->cameraGoto.x -= cameraSpeed * (r32)TimeScale; }
+		if (KeyDown(Key_S)) { HandleKey(Key_S); main->cameraGoto.y += cameraSpeed * (r32)TimeScale; }
+		if (KeyDown(Key_D)) { HandleKey(Key_D); main->cameraGoto.x += cameraSpeed * (r32)TimeScale; }
+	}
 	
 	// +==============================+
 	// |  Handle moveCameraToCenter   |
@@ -264,15 +222,15 @@ void UpdateMainAppState()
 	if (main->isMiddleDragging)
 	{
 		HandleMouse(MouseBtn_Middle);
-		main->cameraGoto = main->middleMouseDragPos - MousePos + ScreenSize/2;
+		main->cameraGoto = main->middleMouseDragPos - (MousePos - main->viewportRec.topLeft) + main->viewportRec.size/2;
 		main->cameraPos = main->cameraPos;
 		if (!MouseDownRaw(MouseBtn_Middle)) { main->isMiddleDragging = false; }
 	}
-	else if (MousePressed(MouseBtn_Middle))
+	else if (MousePressed(MouseBtn_Middle) && IsMouseInsideRec(main->viewportRec))
 	{
 		HandleMouse(MouseBtn_Middle);
 		main->isMiddleDragging = true;
-		main->middleMouseDragPos = main->cameraPos - ScreenSize/2 + MousePos;
+		main->middleMouseDragPos = main->cameraPos - main->viewportRec.size/2 + (MousePos - main->viewportRec.topLeft);
 	}
 	
 	// +==============================+
@@ -281,10 +239,11 @@ void UpdateMainAppState()
 	v2 cameraDelta = main->cameraGoto - main->cameraPos;
 	if (Vec2LengthSquared(cameraDelta) > 1) { main->cameraPos += cameraDelta / CAMERA_LAG; }
 	else { main->cameraPos = main->cameraGoto; }
-	main->cameraGoto.x = MinR32(main->cameraGoto.x, main->nodeBounds.x + main->nodeBounds.width + ScreenSize.width/2 - CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.x = MaxR32(main->cameraGoto.x, main->nodeBounds.x - ScreenSize.width/2 + CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.y = MinR32(main->cameraGoto.y, main->nodeBounds.y + main->nodeBounds.height + ScreenSize.height/2 - CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.y = MaxR32(main->cameraGoto.y, main->nodeBounds.y - ScreenSize.height/2 + CAMERA_LIMIT_BORDER_THICKNESS);
+	v2 viewportSize = main->viewportRec.size;
+	main->cameraGoto.x = MinR32(main->cameraGoto.x, main->nodeBounds.x + main->nodeBounds.width + viewportSize.width/2 - CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.x = MaxR32(main->cameraGoto.x, main->nodeBounds.x - viewportSize.width/2 + CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.y = MinR32(main->cameraGoto.y, main->nodeBounds.y + main->nodeBounds.height + viewportSize.height/2 - CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.y = MaxR32(main->cameraGoto.y, main->nodeBounds.y - viewportSize.height/2 + CAMERA_LIMIT_BORDER_THICKNESS);
 	
 	// +====================================+
 	// | Capture Mouse After View Movement  |
@@ -325,47 +284,63 @@ void UpdateMainAppState()
 	// +==============================+
 	// |      Update Skill Nodes      |
 	// +==============================+
-	v2 nodesOffset = ScreenSize/2 - main->cameraPos;
-	v2 mouseWorldPos = MousePos - ScreenSize/2 + main->cameraPos;
-	VarArrayLoop(&main->nodes, nIndex)
+	if (!main->isNodeSelected || !main->isInfoOpened)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-		bool isHovered = IsMouseOverPrint("SkillNode%llu", node->id);
-		
-		v2 offset = node->targetPos - node->currentPos;
-		if (Vec2LengthSquared(offset) > 1) { node->currentPos += offset / NODE_MOVE_LAG; }
-		else { node->currentPos = node->targetPos; }
-		
-		if (MousePressedRaw(MouseBtn_Left)) { node->leftClickStartedInside = false; }
-		
-		if (isHovered)
+		v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
+		v2 mouseWorldPos = (MousePos - main->viewportRec.topLeft) - main->viewportRec.size/2 + main->cameraPos;
+		VarArrayLoop(&main->nodes, nIndex)
 		{
-			if (MousePressed(MouseBtn_Left))
+			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+			bool isHovered = IsMouseOverPrint("ViewportSkillNode%llu", node->id);
+			
+			v2 offset = node->targetPos - node->currentPos;
+			if (Vec2LengthSquared(offset) > 1) { node->currentPos += offset / NODE_MOVE_LAG; }
+			else { node->currentPos = node->targetPos; }
+			
+			if (MousePressedRaw(MouseBtn_Left)) { node->leftClickStartedInside = false; }
+			
+			if (isHovered)
+			{
+				if (MousePressed(MouseBtn_Left))
+				{
+					HandleMouse(MouseBtn_Left);
+					node->leftClickStartedInside = true;
+					node->leftClickOffset = mouseWorldPos - node->mainRec.topLeft;
+				}
+				if (MouseReleased(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
+				{
+					HandleMouse(MouseBtn_Left);
+					main->isNodeSelected = true;
+					main->selectedNodeId = node->id;
+				}
+			}
+			if (MouseDownRaw(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
+			{
+				v2 moveOffset = mouseWorldPos - (node->mainRec.topLeft + node->leftClickOffset);
+				if (Vec2LengthSquared(moveOffset) >= Square(NODE_MOVE_START_DIST))
+				{
+					node->nodeIsBeingDragged = true;
+				}
+			}
+			if (node->nodeIsBeingDragged)
 			{
 				HandleMouse(MouseBtn_Left);
-				node->leftClickStartedInside = true;
-				node->leftClickOffset = mouseWorldPos - node->mainRec.topLeft;
-			}
-			if (MouseReleased(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
-			{
-				HandleMouse(MouseBtn_Left);
-				main->isNodeSelected = true;
-				main->selectedNodeId = node->id;
+				node->targetPos = mouseWorldPos - node->leftClickOffset + node->mainRec.size/2;
+				if (MouseReleasedRaw(MouseBtn_Left)) { node->nodeIsBeingDragged = false; }
 			}
 		}
-		if (MouseDownRaw(MouseBtn_Left) && node->leftClickStartedInside && !node->nodeIsBeingDragged)
-		{
-			v2 moveOffset = mouseWorldPos - (node->mainRec.topLeft + node->leftClickOffset);
-			if (Vec2LengthSquared(moveOffset) >= Square(NODE_MOVE_START_DIST))
-			{
-				node->nodeIsBeingDragged = true;
-			}
-		}
-		if (node->nodeIsBeingDragged)
+	}
+	
+	// +======================================+
+	// | Left Click in Empty Space Deselects  |
+	// +======================================+
+	if (IsMouseOverNamed("Viewport"))
+	{
+		if (MouseDown(MouseBtn_Left)) { HandleMouse(MouseBtn_Left); }
+		else if (MouseReleased(MouseBtn_Left))
 		{
 			HandleMouse(MouseBtn_Left);
-			node->targetPos = mouseWorldPos - node->leftClickOffset + node->mainRec.size/2;
-			if (MouseReleasedRaw(MouseBtn_Left)) { node->nodeIsBeingDragged = false; }
+			main->isNodeSelected = false;
 		}
 	}
 	
@@ -388,7 +363,8 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 	// +==============================+
 	// |      Render Skill Nodes      |
 	// +==============================+
-	v2 nodesOffset = ScreenSize/2 - main->cameraPos;
+	RcSetViewport(main->viewportRec);
+	v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
 	//non-highlighted connections
 	VarArrayLoop(&main->nodes, nIndex)
 	{
@@ -397,7 +373,7 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		VarArrayLoop(&node->connections, cIndex)
 		{
 			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
-			if (!IsConnectionHoverConnected(connection))
+			if (!IsConnectionHoverConnected(connection) && !IsConnectionSelectionConnected(connection))
 			{
 				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
 				v2 upNodePos = upNode->currentPos + nodesOffset;
@@ -413,13 +389,12 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		VarArrayLoop(&node->connections, cIndex)
 		{
 			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
-			if (IsConnectionHoverConnected(connection))
+			if (IsConnectionHoverConnected(connection) || IsConnectionSelectionConnected(connection))
 			{
 				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
 				v2 upNodePos = upNode->currentPos + nodesOffset;
-				bool eitherNodeHovered = IsConnectionHoverConnected(connection);
-				Color_t connectionColor = eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR;
-				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, CONNECTION_HIGHLIGHT_COLOR);
+				Color_t connectionColor = IsConnectionSelectionConnected(connection) ? CONNECTION_SELECTED_COLOR : CONNECTION_HIGHLIGHT_COLOR;
+				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, connectionColor);
 			}
 		}
 	}
@@ -447,7 +422,8 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 			v2 upNodePos = upNode->currentPos + nodesOffset;
 			v2 upNodeDirVec = Vec2Normalize(upNodePos - nodePos);
 			bool eitherNodeHovered = IsConnectionHoverConnected(connection);
-			Color_t connectionColor = eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR;
+			bool eitherNodeSelected = IsConnectionSelectionConnected(connection);
+			Color_t connectionColor = eitherNodeSelected ? CONNECTION_SELECTED_COLOR : (eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR);
 			RcDrawLine(nodePos, nodePos + upNodeDirVec * Vec2Length(shadowRec.size/2), CONNECTION_THICKNESS, connectionColor);
 		}
 		VarArrayLoop(&main->nodes, nIndex2)
@@ -463,7 +439,8 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 					{
 						v2 downNodeDirVec = Vec2Normalize(node2Pos - nodePos);
 						bool eitherNodeHovered = IsConnectionHoverConnected(connection);
-						Color_t connectionColor = eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR;
+						bool eitherNodeSelected = IsConnectionSelectionConnected(connection);
+						Color_t connectionColor = eitherNodeSelected ? CONNECTION_SELECTED_COLOR : (eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR);
 						RcDrawLine(nodePos, nodePos + downNodeDirVec * Vec2Length(shadowRec.size/2), CONNECTION_THICKNESS, connectionColor);
 					}
 				}
@@ -476,7 +453,7 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
 		rec mainRec = node->mainRec + nodesOffset;
 		bool isSelected = (main->isNodeSelected && node->id == main->selectedNodeId);
-		bool isHovered = IsMouseOverPrint("SkillNode%llu", node->id);
+		bool isHovered = IsMouseOverPrint("ViewportSkillNode%llu", node->id);
 		Color_t nodeColor = GetPredefPalColorByIndex(nIndex);
 		Color_t borderColor = nodeColor;
 		if (isSelected) { borderColor = MonokaiGreen; }
@@ -491,6 +468,12 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		rec mainRec = node->mainRec + nodesOffset;
 		RcDrawText(node->name, node->namePos + mainRec.topLeft, NODE_NAME_COLOR, TextAlignment_Center, mainRec.width + NODE_MAX_NAME_WIDTH_SLOP);
 	}
+	RcSetViewport(ScreenRec);
+	
+	// +==============================+
+	// |        Render Sidebar        |
+	// +==============================+
+	RcDrawRectangle(main->sidebarRec, MonokaiGray2);
 	
 	// +==============================+
 	// | Render Assertion Status Text |

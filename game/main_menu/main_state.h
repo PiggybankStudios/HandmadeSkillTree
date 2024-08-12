@@ -23,13 +23,16 @@ Date:   07\02\2024
 #define NODE_NAME_COLOR               MonokaiWhite
 #define CONNECTION_COLOR              MonokaiGray2
 #define CONNECTION_HIGHLIGHT_COLOR    MonokaiGray1
+#define CONNECTION_SELECTED_COLOR     MonokaiGreen
 #define CONNECTION_THICKNESS          4 //px
 #define CAMERA_MOVE_SPEED_FAST        25 //px/frame
 #define CAMERA_MOVE_SPEED_SLOW        10 //px/frame
 #define CAMERA_LAG                    4 //divisor
 #define CAMERA_LIMIT_BORDER_THICKNESS 64 //px
 #define NODE_MOVE_START_DIST          16 //px
-#define NODE_MOVE_LAG                 6 //divisor
+#define NODE_MOVE_LAG                 3 //divisor
+#define SIDEBAR_ANIM_TIME             200 //ms
+#define TRANSITION_ANIM_TIME          400 //ms
 
 enum NodePlacementAlg_t
 {
@@ -117,6 +120,16 @@ struct MainAppState_t
 	v2 cameraGoto;
 	bool isMiddleDragging;
 	v2 middleMouseDragPos;
+	
+	r32 sidebarAnim;
+	r32 transitionAnim;
+	bool isInfoOpened;
+	
+	UiDivider_t rightDivider;
+	UiDivider_t leftDivider;
+	rec viewportRec;
+	rec sidebarRec;
+	rec infoRec;
 };
 
 #endif //  _MAIN_STATE_H

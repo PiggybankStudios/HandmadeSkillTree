@@ -222,3 +222,8 @@ bool IsConnectionHoverConnected(const SkillNodeConn_t* connection)
 {
 	return (main->isNodeHovered && (main->hoveredNodeId == connection->upId || main->hoveredNodeId == connection->downId));
 }
+
+bool IsConnectionSelectionConnected(const SkillNodeConn_t* connection)
+{
+	return (main->isNodeSelected && (main->selectedNodeId == connection->upId || main->selectedNodeId == connection->downId));
+}
