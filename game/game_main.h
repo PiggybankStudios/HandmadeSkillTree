@@ -17,7 +17,7 @@ Description:
 #include "game_process_events.h"
 
 #include "app_state_list.h"
-#include "main_menu/main_state.h"
+#include "main/main_state.h"
 
 // +--------------------------------------------------------------+
 // |                           Globals                            |

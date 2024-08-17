@@ -9,8 +9,8 @@ Description:
 #include "ui/ui_scroll_view.cpp"
 #include "ui/ui_divider.cpp"
 
-#include "main_menu/main_helpers.cpp"
-#include "main_menu/main_tree.cpp"
+#include "main/main_helpers.cpp"
+#include "main/main_tree.cpp"
 
 // +--------------------------------------------------------------+
 // |                       Access Resources                       |

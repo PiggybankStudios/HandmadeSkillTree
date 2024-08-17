@@ -11,7 +11,7 @@ Description:
 
 #include "file_icon_cache.cpp"
 
-#include "main_menu/main_state.cpp"
+#include "main/main_state.cpp"
 #include "app_state_list.cpp"
 
 #include "game_settings.cpp"
