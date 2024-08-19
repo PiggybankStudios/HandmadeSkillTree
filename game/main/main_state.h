@@ -11,6 +11,7 @@ Date:   07\02\2024
 #include "ui/ui_divider.h"
 
 #include "main/main_markdown.h"
+#include "main/main_tree.h"
 
 #define BACKGROUND_COLOR              MonokaiBack
 #define NODE_WIDTH                    64 //px
@@ -54,54 +55,6 @@ const char* GetNodePlacementAlgStr(NodePlacementAlg_t enumValue)
 	}
 }
 
-enum SkillNodeConnType_t
-{
-	SkillNodeConnType_None = 0,
-	SkillNodeConnType_Dependency,
-	SkillNodeConnType_Sibling,
-	SkillNodeConnType_NumTypes,
-};
-const char* GetSkillNodeConnTypeStr(SkillNodeConnType_t enumValue)
-{
-	switch (enumValue)
-	{
-		case SkillNodeConnType_None:       return "None";
-		case SkillNodeConnType_Dependency: return "Dependency";
-		case SkillNodeConnType_Sibling:    return "Sibling";
-		default: return "Unknown";
-	}
-}
-
-struct SkillNodeConn_t
-{
-	SkillNodeConnType_t type;
-	u64 upId; //this is the library/dependency
-	u64 downId; //this is the thing that uses that library/dependency
-};
-
-struct SkillNode_t
-{
-	u64 id;
-	MyStr_t name;
-	VarArray_t connections; //SkillNodeConn_t
-	u64 numDependents;
-	
-	u64 totalDepsCount;
-	
-	v2 currentPos;
-	v2 targetPos;
-	
-	bool leftClickStartedInside;
-	bool nodeIsBeingDragged;
-	v2 leftClickOffset;
-	
-	rec mainRec;
-	//These are all relative to mainRec
-	rec fillRec;
-	TextMeasure_t nameMeasure; 
-	v2 namePos;
-};
-
 struct MainAppState_t
 {
 	bool initialized;
@@ -113,9 +66,7 @@ struct MainAppState_t
 	bool isNodeHovered;
 	u64 hoveredNodeId;
 	
-	u64 nextNodeId;
-	rec nodeBounds;
-	VarArray_t nodes; //SkillNode_t
+	Tree_t tree;
 	
 	bool moveCameraToCenter;
 	v2 cameraPos;

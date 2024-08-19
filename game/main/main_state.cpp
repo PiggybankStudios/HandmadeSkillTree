@@ -12,6 +12,7 @@ Description:
 #include "main/main_helpers.cpp"
 #include "main/main_markdown.cpp"
 #include "main/main_tree.cpp"
+#include "main/main_tree_layout.cpp"
 
 // +--------------------------------------------------------------+
 // |                       Access Resources                       |
@@ -33,7 +34,8 @@ void StartMainAppState(AppState_t oldAppState, bool initialize)
 	{
 		ClearPointer(main);
 		
-		MainCreateNodes();
+		InitTree(&main->tree, mainHeap);
+		CreateTestTreeNodes(&main->tree);
 		main->placementAlg = NodePlacementAlg_DepsRows;
 		main->doPlacement = true;
 		main->cameraPos = Vec2_Zero;
@@ -61,12 +63,7 @@ void StopMainAppState(AppState_t newAppState, bool deinitialize, bool shuttingDo
 	
 	if (deinitialize && !shuttingDown)
 	{
-		VarArrayLoop(&main->nodes, nIndex)
-		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-			FreeSkillNode(node);
-		}
-		FreeVarArray(&main->nodes);
+		FreeTree(&main->tree);
 		ClearPointer(main);
 	}
 }
@@ -102,10 +99,10 @@ void LayoutMainAppState()
 		RecAlign(&main->infoRec);
 	}
 	
-	main->nodeBounds = Rec_Zero;
-	VarArrayLoop(&main->nodes, nIndex)
+	main->tree.nodeBounds = Rec_Zero;
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		node->mainRec = NewRecCentered(node->currentPos, NewVec2(NODE_WIDTH, NODE_HEIGHT));
 		node->fillRec = NewRec(0, 0, node->mainRec.size);
 		node->nameMeasure = RcMeasureText(node->name, node->mainRec.width + NODE_MAX_NAME_WIDTH_SLOP);
@@ -113,8 +110,8 @@ void LayoutMainAppState()
 			node->mainRec.width/2,
 			-NODE_NAME_MARGIN - node->nameMeasure.size.height + node->nameMeasure.offset.y
 		);
-		if (main->nodeBounds == Rec_Zero) { main->nodeBounds = node->mainRec; }
-		else { main->nodeBounds = RecBoth(main->nodeBounds, node->mainRec); }
+		if (main->tree.nodeBounds == Rec_Zero) { main->tree.nodeBounds = node->mainRec; }
+		else { main->tree.nodeBounds = RecBoth(main->tree.nodeBounds, node->mainRec); }
 	}
 }
 
@@ -124,21 +121,21 @@ void CaptureMouseMainAppState()
 	if (IsMouseInsideRec(main->viewportRec))
 	{
 		v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
-		VarArrayLoop(&main->nodes, nIndex)
+		VarArrayLoop(&main->tree.nodes, nIndex)
 		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+			VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 			if (node->nodeIsBeingDragged)
 			{
-				MouseHitPrint("ViewportSkillNode%llu", node->id);
+				MouseHitPrint("ViewportTreeNode%llu", node->id);
 				main->isNodeHovered = true;
 				main->hoveredNodeId = node->id;
 			}
 		}
-		for (u64 nIndex = main->nodes.length; nIndex > 0; nIndex--)
+		for (u64 nIndex = main->tree.nodes.length; nIndex > 0; nIndex--)
 		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex-1);
+			VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex-1);
 			rec mainRec = node->mainRec + nodesOffset;
-			if (MouseHitRecPrint(mainRec, "ViewportSkillNode%llu", node->id))
+			if (MouseHitRecPrint(mainRec, "ViewportTreeNode%llu", node->id))
 			{
 				main->isNodeHovered = true;
 				main->hoveredNodeId = node->id;
@@ -161,7 +158,7 @@ void UpdateMainAppState()
 	LayoutMainAppState();
 	if (main->doPlacement)
 	{
-		PlaceSkillNodes(main->placementAlg);
+		LayoutTreeNodes(&main->tree, main->placementAlg);
 		LayoutMainAppState();
 		main->doPlacement = false;
 	}
@@ -212,7 +209,7 @@ void UpdateMainAppState()
 	// +==============================+
 	if (main->moveCameraToCenter)
 	{
-		main->cameraGoto = main->nodeBounds.topLeft + main->nodeBounds.size/2;
+		main->cameraGoto = main->tree.nodeBounds.topLeft + main->tree.nodeBounds.size/2;
 		main->cameraPos = main->cameraGoto;
 		main->moveCameraToCenter = false;
 	}
@@ -241,10 +238,10 @@ void UpdateMainAppState()
 	if (Vec2LengthSquared(cameraDelta) > 1) { main->cameraPos += cameraDelta / CAMERA_LAG; }
 	else { main->cameraPos = main->cameraGoto; }
 	v2 viewportSize = main->viewportRec.size;
-	main->cameraGoto.x = MinR32(main->cameraGoto.x, main->nodeBounds.x + main->nodeBounds.width + viewportSize.width/2 - CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.x = MaxR32(main->cameraGoto.x, main->nodeBounds.x - viewportSize.width/2 + CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.y = MinR32(main->cameraGoto.y, main->nodeBounds.y + main->nodeBounds.height + viewportSize.height/2 - CAMERA_LIMIT_BORDER_THICKNESS);
-	main->cameraGoto.y = MaxR32(main->cameraGoto.y, main->nodeBounds.y - viewportSize.height/2 + CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.x = MinR32(main->cameraGoto.x, main->tree.nodeBounds.x + main->tree.nodeBounds.width + viewportSize.width/2 - CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.x = MaxR32(main->cameraGoto.x, main->tree.nodeBounds.x - viewportSize.width/2 + CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.y = MinR32(main->cameraGoto.y, main->tree.nodeBounds.y + main->tree.nodeBounds.height + viewportSize.height/2 - CAMERA_LIMIT_BORDER_THICKNESS);
+	main->cameraGoto.y = MaxR32(main->cameraGoto.y, main->tree.nodeBounds.y - viewportSize.height/2 + CAMERA_LIMIT_BORDER_THICKNESS);
 	
 	// +====================================+
 	// | Capture Mouse After View Movement  |
@@ -268,7 +265,7 @@ void UpdateMainAppState()
 	if (KeyPressed(Key_F5))
 	{
 		HandleKeyExtended(Key_F5);
-		PlaceSkillNodes(main->placementAlg, true);
+		LayoutTreeNodes(&main->tree, main->placementAlg, true);
 	}
 	// +==============================+
 	// |     F6 Regenerates Nodes     |
@@ -276,23 +273,23 @@ void UpdateMainAppState()
 	if (KeyPressed(Key_F6))
 	{
 		HandleKeyExtended(Key_F6);
-		MainCreateNodes();
-		PlaceSkillNodes(main->placementAlg, false);
+		CreateTestTreeNodes(&main->tree);
+		LayoutTreeNodes(&main->tree, main->placementAlg, false);
 		LayoutMainAppState();
-		PlaceSkillNodes(main->placementAlg, true);
+		LayoutTreeNodes(&main->tree, main->placementAlg, true);
 	}
 	
 	// +==============================+
-	// |      Update Skill Nodes      |
+	// |      Update Tree Nodes       |
 	// +==============================+
 	if (!main->isNodeSelected || !main->isInfoOpened)
 	{
 		v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
 		v2 mouseWorldPos = (MousePos - main->viewportRec.topLeft) - main->viewportRec.size/2 + main->cameraPos;
-		VarArrayLoop(&main->nodes, nIndex)
+		VarArrayLoop(&main->tree.nodes, nIndex)
 		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-			bool isHovered = IsMouseOverPrint("ViewportSkillNode%llu", node->id);
+			VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
+			bool isHovered = IsMouseOverPrint("ViewportTreeNode%llu", node->id);
 			
 			v2 offset = node->targetPos - node->currentPos;
 			if (Vec2LengthSquared(offset) > 1) { node->currentPos += offset / NODE_MOVE_LAG; }
@@ -362,37 +359,37 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 	RcBegin(pig->currentWindow, renderBuffer, &pig->resources.shaders->main2D, BACKGROUND_COLOR);
 	
 	// +==============================+
-	// |      Render Skill Nodes      |
+	// |      Render Tree Nodes       |
 	// +==============================+
 	RcSetViewport(main->viewportRec);
 	v2 nodesOffset = main->viewportRec.topLeft + main->viewportRec.size/2 - main->cameraPos;
 	//non-highlighted connections
-	VarArrayLoop(&main->nodes, nIndex)
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		v2 nodePos = node->currentPos + nodesOffset;
 		VarArrayLoop(&node->connections, cIndex)
 		{
-			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
+			VarArrayLoopGet(TreeNodeConn_t, connection, &node->connections, cIndex);
 			if (!IsConnectionHoverConnected(connection) && !IsConnectionSelectionConnected(connection))
 			{
-				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
+				TreeNode_t* upNode = FindTreeNodeById(&main->tree, connection->upId);
 				v2 upNodePos = upNode->currentPos + nodesOffset;
 				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, CONNECTION_COLOR);
 			}
 		}
 	}
 	//highlighted connections
-	VarArrayLoop(&main->nodes, nIndex)
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		v2 nodePos = node->currentPos + nodesOffset;
 		VarArrayLoop(&node->connections, cIndex)
 		{
-			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
+			VarArrayLoopGet(TreeNodeConn_t, connection, &node->connections, cIndex);
 			if (IsConnectionHoverConnected(connection) || IsConnectionSelectionConnected(connection))
 			{
-				SkillNode_t* upNode = FindSkillNodeById(connection->upId);
+				TreeNode_t* upNode = FindTreeNodeById(&main->tree, connection->upId);
 				v2 upNodePos = upNode->currentPos + nodesOffset;
 				Color_t connectionColor = IsConnectionSelectionConnected(connection) ? CONNECTION_SELECTED_COLOR : CONNECTION_HIGHLIGHT_COLOR;
 				RcDrawLine(nodePos, upNodePos, CONNECTION_THICKNESS, connectionColor);
@@ -400,9 +397,9 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		}
 	}
 	//shadows
-	VarArrayLoop(&main->nodes, nIndex)
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		v2 nodePos = node->currentPos + nodesOffset;
 		rec mainRec = node->mainRec + nodesOffset;
 		rec shadowRec = RecInflate(mainRec, NODE_SHADOW_SIZE, NODE_SHADOW_SIZE);
@@ -418,8 +415,8 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		//Since we drew a shadow on top of all connections, we want to redraw a portion of our connection lines on top to make them look unshadowed
 		VarArrayLoop(&node->connections, cIndex)
 		{
-			VarArrayLoopGet(SkillNodeConn_t, connection, &node->connections, cIndex);
-			SkillNode_t* upNode = FindSkillNodeById(connection->upId);
+			VarArrayLoopGet(TreeNodeConn_t, connection, &node->connections, cIndex);
+			TreeNode_t* upNode = FindTreeNodeById(&main->tree, connection->upId);
 			v2 upNodePos = upNode->currentPos + nodesOffset;
 			v2 upNodeDirVec = Vec2Normalize(upNodePos - nodePos);
 			bool eitherNodeHovered = IsConnectionHoverConnected(connection);
@@ -427,15 +424,15 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 			Color_t connectionColor = eitherNodeSelected ? CONNECTION_SELECTED_COLOR : (eitherNodeHovered ? CONNECTION_HIGHLIGHT_COLOR : CONNECTION_COLOR);
 			RcDrawLine(nodePos, nodePos + upNodeDirVec * Vec2Length(shadowRec.size/2), CONNECTION_THICKNESS, connectionColor);
 		}
-		VarArrayLoop(&main->nodes, nIndex2)
+		VarArrayLoop(&main->tree.nodes, nIndex2)
 		{
-			VarArrayLoopGet(SkillNode_t, node2, &main->nodes, nIndex2);
+			VarArrayLoopGet(TreeNode_t, node2, &main->tree.nodes, nIndex2);
 			if (node->id != node2->id)
 			{
 				v2 node2Pos = node2->currentPos + nodesOffset;
 				VarArrayLoop(&node2->connections, cIndex)
 				{
-					VarArrayLoopGet(SkillNodeConn_t, connection, &node2->connections, cIndex);
+					VarArrayLoopGet(TreeNodeConn_t, connection, &node2->connections, cIndex);
 					if (connection->upId == node->id)
 					{
 						v2 downNodeDirVec = Vec2Normalize(node2Pos - nodePos);
@@ -449,12 +446,12 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 		}
 	}
 	//nodes
-	VarArrayLoop(&main->nodes, nIndex)
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		rec mainRec = node->mainRec + nodesOffset;
 		bool isSelected = (main->isNodeSelected && node->id == main->selectedNodeId);
-		bool isHovered = IsMouseOverPrint("ViewportSkillNode%llu", node->id);
+		bool isHovered = IsMouseOverPrint("ViewportTreeNode%llu", node->id);
 		Color_t nodeColor = GetPredefPalColorByIndex(nIndex);
 		Color_t borderColor = nodeColor;
 		if (isSelected) { borderColor = MonokaiGreen; }
@@ -463,9 +460,9 @@ void RenderMainAppState(FrameBuffer_t* renderBuffer, bool bottomLayer)
 	}
 	//names
 	RcBindFont(&pig->resources.fonts->debug, SelectDefaultFontFace());
-	VarArrayLoop(&main->nodes, nIndex)
+	VarArrayLoop(&main->tree.nodes, nIndex)
 	{
-		VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
+		VarArrayLoopGet(TreeNode_t, node, &main->tree.nodes, nIndex);
 		rec mainRec = node->mainRec + nodesOffset;
 		RcDrawText(node->name, node->namePos + mainRec.topLeft, NODE_NAME_COLOR, TextAlignment_Center, mainRec.width + NODE_MAX_NAME_WIDTH_SLOP);
 	}

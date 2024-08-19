@@ -3,36 +3,176 @@ File:   main_tree.cpp
 Author: Taylor Robbins
 Date:   08\11\2024
 Description: 
-	** Holds the MainCreateNodes function which fills out a test tree of SkillNodes
+	** Holds all the functions that help us interact with Tree_t, TreeNode_t, etc.
+	**
+	** The "tree" is our main structure that backs the 2D visual that you explore
+	** by panning around. Each node represents a project or library or etc. that
+	** may or may not have some tasks that can help you get familiar with the project.
+	** At a bare minimum each node has a name and some links to relavent sites.
+	**
+	** The tree is based on top of the MdFile_t abstraction, which helps us allow
+	** the user to edit various bits of text directly in the UI, and each edit can
+	** target a particular "piece" of the markdown file and only change that portion
 */
 
-void MainCreateNodes()
+void FreeTreeNode(Tree_t* tree, TreeNode_t* node)
 {
-	if (main->nodes.allocArena == nullptr)
+	NotNull3(tree, tree->allocArena, node);
+	ClearPointer(node);
+	FreeString(tree->allocArena, &node->name);
+	FreeVarArray(&node->connections);
+	ClearPointer(node);
+}
+
+void FreeTree(Tree_t* tree)
+{
+	NotNull(tree);
+	if (tree->allocArena != nullptr)
 	{
-		CreateVarArray(&main->nodes, mainHeap, sizeof(SkillNode_t));
-	}
-	else	
-	{
-		VarArrayLoop(&main->nodes, nIndex)
+		VarArrayLoop(&tree->nodes, nIndex)
 		{
-			VarArrayLoopGet(SkillNode_t, node, &main->nodes, nIndex);
-			FreeSkillNode(node);
+			VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+			FreeTreeNode(tree, node);
+		}
+		FreeVarArray(&tree->nodes);
+	}
+	ClearPointer(tree);
+}
+
+void ClearTree(Tree_t* tree)
+{
+	NotNull(tree);
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		FreeTreeNode(tree, node);
+	}
+	VarArrayClear(&tree->nodes);
+	tree->nextNodeId = 1;
+}
+
+void InitTree(Tree_t* tree, MemArena_t* memArena)
+{
+	NotNull2(tree, memArena);
+	ClearPointer(tree);
+	tree->allocArena = memArena;
+	CreateVarArray(&tree->nodes, memArena, sizeof(TreeNode_t));
+	tree->nextNodeId = 1;
+}
+
+TreeNode_t* FindTreeNodeById(Tree_t* tree, u64 id)
+{
+	NotNull(tree);
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		if (node->id == id) { return node; }
+	}
+	return nullptr;
+}
+
+TreeNode_t* AddTreeNode(Tree_t* tree, MyStr_t name, u64 numDependencies = 0, u64* dependencyIds = nullptr)
+{
+	NotNull2(tree, tree->allocArena);
+	NotNullStr(&name);
+	TreeNode_t* newNode = VarArrayAdd(&tree->nodes, TreeNode_t);
+	NotNull(newNode);
+	ClearPointer(newNode);
+	newNode->id = tree->nextNodeId;
+	tree->nextNodeId++;
+	CreateVarArray(&newNode->connections, tree->allocArena, sizeof(TreeNodeConn_t));
+	AssertIf(numDependencies > 0, dependencyIds != nullptr);
+	for (u64 dIndex = 0; dIndex < numDependencies; dIndex++)
+	{
+		u64 dependencyId = dependencyIds[dIndex];
+		TreeNodeConn_t* newConnection = VarArrayAdd(&newNode->connections, TreeNodeConn_t);
+		NotNull(newConnection);
+		ClearPointer(newConnection);
+		newConnection->type = TreeNodeConnType_Dependency;
+		newConnection->upId = dependencyId;
+		newConnection->downId = newNode->id;
+	}
+	newNode->name = AllocString(tree->allocArena, &name);
+	return newNode;
+}
+
+void CalculateAllDependents(Tree_t* tree)
+{
+	NotNull(tree);
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		node->numDependents = 0;
+	}
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		VarArrayLoop(&node->connections, cIndex)
+		{
+			VarArrayLoopGet(TreeNodeConn_t, connection, &node->connections, cIndex);
+			TreeNode_t* dependencyNode = FindTreeNodeById(tree, connection->upId);
+			dependencyNode->numDependents++;
 		}
 	}
-	VarArrayClear(&main->nodes);
-	main->nextNodeId = 1;
+}
+
+u64 CalculateTotalDepsForNode(Tree_t* tree, TreeNode_t* node)
+{
+	NotNull2(tree, node);
 	
-	#define AddNode(name, displayName) u64 name; do                  \
-	{                                                                \
-		SkillNode_t* name##Pntr = AddSkillNode(NewStr(displayName)); \
-		name = name##Pntr->id;                                       \
+	if (node->totalDepsCount == 0 && node->connections.length > 0)
+	{
+		// We set the totalDepsCount to 1 here to make sure we don't find a loop in the graph that leads back to ourself and therefore recurse infinitely.
+		// Loops in the graph are still bad for other reasons, but at least we won't crash
+		node->totalDepsCount = 1;
+		
+		VarArrayLoop(&node->connections, cIndex)
+		{
+			VarArrayLoopGet(TreeNodeConn_t, connection, &node->connections, cIndex);
+			Assert(connection->upId != node->id);
+			if (connection->type == TreeNodeConnType_Dependency)
+			{
+				TreeNode_t* dependencyNode = FindTreeNodeById(tree, connection->upId);
+				NotNull(dependencyNode);
+				u64 dependencyTotalDepsCount = CalculateTotalDepsForNode(tree, dependencyNode);
+				node->totalDepsCount = MaxU64(node->totalDepsCount, dependencyTotalDepsCount+1);
+			}
+		}
+	}
+	
+	return node->totalDepsCount;
+}
+
+void CalculateTotalDepsForAll(Tree_t* tree)
+{
+	NotNull(tree);
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		node->totalDepsCount = 0;
+	}
+	VarArrayLoop(&tree->nodes, nIndex)
+	{
+		VarArrayLoopGet(TreeNode_t, node, &tree->nodes, nIndex);
+		CalculateTotalDepsForNode(tree, node);
+	}
+}
+
+void CreateTestTreeNodes(Tree_t* tree)
+{
+	NotNull2(tree, tree->allocArena);
+	ClearTree(tree);
+	
+	#define AddNode(name, displayName) u64 name; do                      \
+	{                                                                    \
+		TreeNode_t* name##Pntr = AddTreeNode(tree, NewStr(displayName)); \
+		name = name##Pntr->id;                                           \
 	} while(0)
-	#define AddNodeEx(name, displayName, ...) u64 name; do                                               \
-	{                                                                                                    \
-		u64 name##Deps[] = { __VA_ARGS__ };                                                              \
-		SkillNode_t* name##Pntr = AddSkillNode(NewStr(displayName), ArrayCount(name##Deps), name##Deps); \
-		name = name##Pntr->id;                                                                           \
+	#define AddNodeEx(name, displayName, ...) u64 name; do                                                   \
+	{                                                                                                        \
+		u64 name##Deps[] = { __VA_ARGS__ };                                                                  \
+		TreeNode_t* name##Pntr = AddTreeNode(tree, NewStr(displayName), ArrayCount(name##Deps), name##Deps); \
+		name = name##Pntr->id;                                                                               \
 	} while(0)
 	
 	AddNode(nodeLlvm, "LLVM");
@@ -112,6 +252,5 @@ void MainCreateNodes()
 	AddNodeEx(nodeGbLibraries, "GB Libraries", nodeCpp);
 	AddNode(nodeSoLoud, "SoLoud Audio Engine");
 	
-	CalculateAllDependents();
+	CalculateAllDependents(tree);
 }
-
