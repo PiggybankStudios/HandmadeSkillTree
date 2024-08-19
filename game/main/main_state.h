@@ -10,6 +10,8 @@ Date:   07\02\2024
 #include "ui/ui_scroll_view.h"
 #include "ui/ui_divider.h"
 
+#include "main/main_markdown.h"
+
 #define BACKGROUND_COLOR              MonokaiBack
 #define NODE_WIDTH                    64 //px
 #define NODE_HEIGHT                   64 //px

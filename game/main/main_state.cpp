@@ -10,6 +10,7 @@ Description:
 #include "ui/ui_divider.cpp"
 
 #include "main/main_helpers.cpp"
+#include "main/main_markdown.cpp"
 #include "main/main_tree.cpp"
 
 // +--------------------------------------------------------------+
