@@ -64,12 +64,37 @@ void FreeMdFile(MdFile_t* file)
 	ClearPointer(file);
 }
 
+void FreeMdFileCollection(MdFileCollection_t* collection)
+{
+	NotNull(collection);
+	if (collection->memArena != nullptr)
+	{
+		MdFile_t* file = LinkedListFirst(&collection->files, MdFile_t);
+		while (file != nullptr)
+		{
+			FreeMdFile(file);
+			file = LinkedListNext(&collection->files, MdFile_t, file);
+		}
+		FreeLinkedList(&collection->files);
+	}
+	ClearPointer(collection);
+}
+
 void InitMdFile(MdFile_t* file, MemArena_t* memArena)
 {
 	NotNull2(file, memArena);
 	ClearPointer(file);
 	file->allocArena = memArena;
 	CreateLinkedList(&file->pieces, memArena, MdPiece_t);
+}
+
+void InitMdFileCollection(MdFileCollection_t* collection, MemArena_t* memArena)
+{
+	NotNull2(collection, memArena);
+	ClearPointer(collection);
+	collection->allocArena = memArena;
+	collection->nextFileId = 1;
+	CreateLinkedList(&collection->files, memArena, MdFile_t);
 }
 
 void MdFileSetPath(MdFile_t* file, MyStr_t path)
@@ -85,6 +110,15 @@ void MdFileSetContents(MdFile_t* file, MyStr_t contents)
 	NotNullStr(&contents);
 	FreeString(file->allocArena, &file->contents);
 	file->contents = AllocString(file->allocArena, &contents);
+}
+
+MdFile_t* AddMdFile(MdFileCollection_t* collection)
+{
+	NotNull2(collection, collection->allocArena);
+	// #define LinkedListAdd(list, type)
+	MdFile_t* newFile = LinkedListAdd(&collection->files, MdFile_t);
+	NotNull(newFile);
+	ClearPointer(newFile);
 }
 
 bool TryParseMdFile(MyStr_t fileContents, ProcessLog_t* log, MdFile_t* fileOut)

@@ -54,9 +54,17 @@ struct MdPiece_t
 struct MdFile_t
 {
 	MemArena_t* allocArena;
+	u64 id;
 	MyStr_t path;
 	MyStr_t contents;
 	LinkedList_t pieces; //MdPiece_t
+};
+
+struct MdFileCollection_t
+{
+	MemArena_t* allocArena;
+	u64 nextFileId;
+	LinkedList_t files; //MdFile_t
 };
 
 #endif //  _MAIN_MARKDOWN_H
