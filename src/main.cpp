@@ -11,6 +11,7 @@ Description:
 #include <orca.h>
 
 #include "orca_aliases.h"
+#include "orca_addons.h"
 
 #include "build_config.h"
 

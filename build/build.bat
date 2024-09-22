@@ -44,7 +44,7 @@ set CompilerFlags=%CompilerFlags% -Wl,--no-entry -Wl,--export-dynamic
 :: Include Directories
 :: --sysroot = Set the include directory for standard library headers (like stdint.h)
 :: -I = Add an include directory so search when resolving #include "..." lines
-set CompilerFlags=%CompilerFlags% --sysroot %OrcaSdkPath%/orca-libc -I%OrcaSdkPath%/src -I%OrcaSdkPath%/src/ext
+set CompilerFlags=%CompilerFlags% --sysroot %OrcaSdkPath%/orca-libc -I%OrcaSdkPath%/src -I%OrcaSdkPath%/src/ext -I%LibFolder%/include/my_orca
 :: Linker Flags
 :: -L = Add a lib include folder
 :: -lorca_wasm = This is the precompiled binary that we compile with in order to get all the orca API functions exposed to us
